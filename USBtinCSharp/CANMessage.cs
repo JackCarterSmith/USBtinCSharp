@@ -158,25 +158,18 @@ namespace USBtinCSharp
             this.rtr = false;
             int index = 1;
             char type;
-            if (msg.length() > 0) type = msg.charAt(0);
+            if (msg.Length > 0) type = msg[0];
             else type = 't';
 
-            switch (type)
-            {
+            switch (type) {
                 case 'r':
                     this.rtr = true;
                 default:
                 case 't':
-                    try
-                    {
-                        this.id = Integer.parseInt(msg.substring(index, index + 3), 16);
+                    try {
+                        this.id = int.Parse(msg.Substring(index, index + 3), System.Globalization.NumberStyles.AllowParentheses);
                     }
-                    catch (java.lang.stringIndexOutOfBoundsException e)
-                    {
-                        this.id = 0;
-                    }
-                    catch (java.lang.NumberFormatException e)
-                    {
+                    catch (Exception) {
                         this.id = 0;
                     }
                     this.extended = false;
@@ -185,16 +178,10 @@ namespace USBtinCSharp
                 case 'R':
                     this.rtr = true;
                 case 'T':
-                    try
-                    {
-                        this.id = Integer.parseInt(msg.substring(index, index + 8), 16);
+                    try {
+                        this.id = int.Parse(msg.Substring(index, index + 8), System.Globalization.NumberStyles.AllowParentheses);
                     }
-                    catch (java.lang.stringIndexOutOfBoundsException e)
-                    {
-                        this.id = 0;
-                    }
-                    catch (java.lang.NumberFormatException e)
-                    {
+                    catch (Exception) {
                         this.id = 0;
                     }
                     this.extended = true;
@@ -203,36 +190,22 @@ namespace USBtinCSharp
             }
 
             int length;
-            try
-            {
-                length = Integer.parseInt(msg.substring(index, index + 1), 16);
+            try {
+                length = int.Parse(msg.Substring(index, index + 1), System.Globalization.NumberStyles.AllowParentheses);
                 if (length > 8) length = 8;
             }
-            catch (java.lang.stringIndexOutOfBoundsException e)
-            {
-                length = 0;
-            }
-            catch (java.lang.NumberFormatException e)
-            {
+            catch (Exception) {
                 length = 0;
             }
             index += 1;
 
             this.data = new byte[length];
-            if (!this.rtr)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    try
-                    {
-                        this.data[i] = (byte)Integer.parseInt(msg.substring(index, index + 2), 16);
+            if (!this.rtr) {
+                for (int i = 0; i < length; i++) {
+                    try {
+                        this.data[i] = (byte)int.Parse(msg.Substring(index, index + 2), System.Globalization.NumberStyles.AllowParentheses);
                     }
-                    catch (java.lang.stringIndexOutOfBoundsException e)
-                    {
-                        this.data[i] = 0;
-                    }
-                    catch (java.lang.NumberFormatException e)
-                    {
+                    catch (Exception) {
                         this.data[i] = 0;
                     }
                     index += 2;

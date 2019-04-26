@@ -53,6 +53,7 @@
     <Compile Include="CANMessageListener.cs" />
     <Compile Include="USBtinCSharp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="USBtinException.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="JCS.pfx" />
