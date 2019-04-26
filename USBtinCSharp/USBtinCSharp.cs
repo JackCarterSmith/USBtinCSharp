@@ -12,23 +12,23 @@ namespace USBtinCSharp
         /** Serial port (virtual) to which USBtin is connected */
         protected SerialPort _serialPort;
 
-        /** Characters coming from USBtin are collected in this StringBuilder */
-        protected StringBuilder incomingMessage = new StringBuilder();
+        /** Characters coming from USBtin are collected in this stringBuilder */
+        protected stringBuilder incomingMessage = new stringBuilder();
 
         /** Listener for CAN messages */
-        protected ArrayList<CANMessageListener> listeners = new ArrayList<CANMessageListener>();
+        protected List<CANMessageListener> listeners = new List<CANMessageListener>();
 
         /** Transmit fifo */
         protected LinkedList<CANMessage> fifoTX = new LinkedList<CANMessage>();
 
         /** USBtin firmware version */
-        protected String firmwareVersion;
+        protected string firmwareVersion;
 
         /** USBtin hardware version */
-        protected String hardwareVersion;
+        protected string hardwareVersion;
 
         /** USBtin serial number */
-        protected String serialNumber;
+        protected string serialNumber;
 
         /** Timeout for response from USBtin */
         protected readonly int TIMEOUT = 1000;
