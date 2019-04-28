@@ -25,14 +25,16 @@ using System.Text;
 namespace USBtinCSharp
 {
     /**
-     * Listener for CAN messages.
+     * <summary>Listener for CAN messages.</summary>
      */
     public interface ICANMessageListener
     {
         /**
+         * <summary>
          * This method is called on incoming CAN messages
+         * </summary>
          * 
-         * @param canmsg Received CAN message
+         * <param name="canmsg">Received CAN message</param>
          */
         void ReceiveCANMessage(CANMessage canmsg);
     }

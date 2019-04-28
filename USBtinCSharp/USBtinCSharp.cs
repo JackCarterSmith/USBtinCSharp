@@ -27,9 +27,11 @@ using System.Text;
 namespace USBtinCSharp
 {
     /**
+     * <summary>
      * Represents an USBtin device.
      * Provide access to an USBtin device (http://www.fischl.de/usbtin) over virtual
      * serial port (CDC).
+     * </summary>
      */
     public class USBtinCSharp
     {
@@ -38,6 +40,12 @@ namespace USBtinCSharp
 
         /** Characters coming from USBtin are collected in this stringBuilder */
         protected StringBuilder incomingMessage = new StringBuilder();
+
+        /** Listener for CAN messages */
+        protected List<ICANMessageListener> listeners = new List<ICANMessageListener>();
+
+        /** Transmit fifo */
+        protected LinkedList<CANMessage> fifoTX = new LinkedList<CANMessage>();
 
         /** USBtin firmware version */
         protected string firmwareVersion;
@@ -54,7 +62,8 @@ namespace USBtinCSharp
         /** Bytes array decoder/encoder */
         private ASCIIEncoding encoding = new ASCIIEncoding();
 
-        public enum OpenMode {
+        public enum OpenMode
+        {
             /** Send and receive on CAN bus */
             ACTIVE,
             /** Listen only, sending messages is not possible */
@@ -71,7 +80,8 @@ namespace USBtinCSharp
          * 
          * <returns>Firmware version</returns>
          */
-        public string GetFirmwareVersion() {
+        public string GetFirmwareVersion()
+        {
             return firmwareVersion;
         }
 
@@ -83,7 +93,8 @@ namespace USBtinCSharp
          * 
          * <returns>Hardware version</returns>
          */
-        public string GetHardwareVersion() {
+        public string GetHardwareVersion()
+        {
             return hardwareVersion;
         }
 
@@ -95,7 +106,8 @@ namespace USBtinCSharp
          *
          * @return Serial number
          */
-        public string GetSerialNumber() {
+        public string GetSerialNumber()
+        {
             return serialNumber;
         }
 
@@ -109,12 +121,15 @@ namespace USBtinCSharp
          * <param name="portName">Name of virtual serial port</param>
          * @throws USBtinException Error while connecting to USBtin
          */
-        public void Connect(string portName) {
+        public void Connect(string portName)
+        {
             byte[] buffer = null;
 
-            try {
+            try
+            {
                 // create serial port object
-                serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.None) {
+                serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.None)
+                {
                     ReadTimeout = TIMEOUT,
                     WriteTimeout = TIMEOUT
                 };
@@ -158,9 +173,12 @@ namespace USBtinCSharp
         */
         public void Disconnect()
         {
-            try {
+            try
+            {
                 serialPort.Close();
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 throw new USBtinException(e.Message);
             }
         }
@@ -175,10 +193,12 @@ namespace USBtinCSharp
          */
         public void OpenCANChannel(int baudrate, OpenMode mode)
         {
-            try {
+            try
+            {
                 // set baudrate
                 char baudCh = ' ';
-                switch (baudrate) {
+                switch (baudrate)
+                {
                     case 10000: baudCh = '0'; break;
                     case 20000: baudCh = '1'; break;
                     case 50000: baudCh = '2'; break;
@@ -190,10 +210,13 @@ namespace USBtinCSharp
                     case 1000000: baudCh = '8'; break;
                 }
 
-                if (baudCh != ' ') {
+                if (baudCh != ' ')
+                {
                     // use preset baudrate
                     this.Transmit("S" + baudCh);
-                } else {
+                }
+                else
+                {
                     // calculate baudrate register settings
 
                     const int FOSC = 24000000;
@@ -203,7 +226,8 @@ namespace USBtinCSharp
                     int brpopt = 0;
 
                     // walk through possible can bit length (in TQ)
-                    for (int x = 11; x <= 23; x++) {
+                    for (int x = 11; x <= 23; x++)
+                    {
                         // get next even value for baudrate factor
                         int xbrp = (xdesired * 10) / x;
                         int m = xbrp % 20;
@@ -235,7 +259,8 @@ namespace USBtinCSharp
 
                 // open can channel
                 char modeCh;
-                switch (mode) {
+                switch (mode)
+                {
                     case OpenMode.LISTENONLY: modeCh = 'L'; break;
                     case OpenMode.LOOPBACK: modeCh = 'l'; break;
                     case OpenMode.ACTIVE: modeCh = 'O'; break;
@@ -246,7 +271,9 @@ namespace USBtinCSharp
                 // register serial port event listener
                 serialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
 
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 throw new USBtinException(e.Message);
             }
         }
@@ -258,11 +285,14 @@ namespace USBtinCSharp
          */
         public void CloseCANChannel()
         {
-            try {
+            try
+            {
                 //Remove event listener from serial port
                 serialPort.DataReceived -= new SerialDataReceivedEventHandler(DataReceivedHandler);
                 serialPort.Write(encoding.GetBytes("C\r"), 0, 1);
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 throw new USBtinException(e.Message);
             }
 
@@ -270,141 +300,177 @@ namespace USBtinCSharp
             hardwareVersion = null;
         }
 
-        private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
-        {
-            lock (SyncPort)
-                Q_Receive.Write(serialPort.ReadExisting());
-        }
-
         /**
-         * Read response from USBtin
-         *
-         * @return Response from USBtin
-         * @throws SerialPortException Error while accessing USBtin
-         * @throws SerialPortTimeoutException Timeout of serial port
-         */
-        protected string ReadResponse() {
-            StringBuilder response = new StringBuilder();
-            byte[] buffer = null;
-            while (true) {
-                serialPort.Read(buffer, 0, 1, 1000);
-                if (buffer[0] == '\r') {
-                    return response.ToString();
-                } else if (buffer[0] == 7) {
-                    throw new SerialPortException(serialPort.getPortName(), "transmit", "BELL signal");
-                } else {
-                    response.append((char) buffer[0]);
-                }
-            }
-        }
-
-        /**
-         * Transmit given command to USBtin
-         *
-         * @param cmd Command
-         * @return Response from USBtin
-         * @throws SerialPortException Error while talking to USBtin
-         * @throws SerialPortTimeoutException Timeout of serial port
-         */
-        public string Transmit(string cmd) {
-            string cmdline = cmd + "\r";
-            serialPort.writeBytes(cmdline.getBytes());
-
-            return this.ReadResponse();
-        }
-
-        /**
+         * <summary>
          * Handle serial port event.
          * Read single byte and check for end of line character.
          * If end of line is reached, parse command and dispatch it.
+         * </summary>
          * 
-         * @param event Serial port event
+         * <param name="e">Serial port event args</param>
          */
-        public void serialEvent(SerialPortEvent event) {
-            if (event.isRXCHAR() && event.getEventValue() > 0) {
-                try {
-                    byte buffer[] = serialPort.readBytes();
-                    for (byte b in buffer) {
-                        if ((b == '\r') && incomingMessage.length() > 0)
+        private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
+        {
+            SerialPort s = (SerialPort)sender;
+            try
+            {
+                byte[] buffer = null;
+                s.Read(buffer, 0, s.BytesToRead);
+                foreach (byte b in buffer)
+                {
+                    if ((b == '\r') & incomingMessage.Length > 0)
+                    {
+                        string message = incomingMessage.ToString();
+                        char cmd = message[0];
+
+                        // check if this is a CAN message
+                        if (cmd == 't' || cmd == 'T' || cmd == 'r' || cmd == 'R')
                         {
-                            string message = incomingMessage.toString();
-                            char cmd = message.charAt(0);
+                            // create CAN message from message string
+                            CANMessage canmsg = new CANMessage(message);
 
-                            // check if this is a CAN message
-                            if (cmd == 't' || cmd == 'T' || cmd == 'r' || cmd == 'R')
+                            // give the CAN message to the listeners
+                            foreach (ICANMessageListener listener in listeners)
                             {
-                                // create CAN message from message string
-                                CANMessage canmsg = new CANMessage(message);
-
-                                // give the CAN message to the listeners
-                                for (CANMessageListener listener : listeners)
-                                {
-                                    listener.receiveCANMessage(canmsg);
-                                }
-                            } else if ((cmd == 'z') || (cmd == 'Z')) {
-                                // remove first message from transmit fifo and send next one
-                                fifoTX.removeFirst();
-
-                                try {
-                                    sendFirstTXFifoMessage();
-                                } catch (USBtinException ex) {
-                                    System.err.println(ex);
-                                }
+                                listener.ReceiveCANMessage(canmsg);
                             }
-                            incomingMessage.setLength(0);
-                        } else if (b == 0x07) {
-                            // resend first element from tx fifo
-                            try {
-                                sendFirstTXFifoMessage();
-                            } catch (USBtinException ex) {
-                                System.err.println(ex);
+                        }
+                        else if ((cmd == 'z') || (cmd == 'Z'))
+                        {
+                            // remove first message from transmit fifo and send next one
+                            fifoTX.RemoveFirst();
+
+                            try
+                            {
+                                SendFirstTXFifoMessage();
                             }
-                        } else if (b != '\r') {
-                        incomingMessage.append((char)b);
+                            catch (USBtinException)
+                            {
+                                //System.err.println(ex);
+                            }
+                        }
+                        incomingMessage.Length = 0;
+                    }
+                    else if (b == 0x07)
+                    {
+                        // resend first element from tx fifo
+                        try
+                        {
+                            SendFirstTXFifoMessage();
+                        }
+                        catch (USBtinException)
+                        {
+                            //System.err.println(ex);
+                        }
+                    }
+                    else if (b != '\r')
+                    {
+                        incomingMessage.Append((char)b);
                     }
                 }
-            } catch (SerialPortException ex) {
-                System.err.println(ex);
+            }
+            catch (Exception ex)
+            {
+                throw new USBtinException(ex.Message);
             }
         }
 
         /**
+         * <summary>
+         * Read response from USBtin
+         * </summary>
+         *
+         * <returns>Response from USBtin</returns>
+         * @throws SerialPortException Error while accessing USBtin
+         * @throws SerialPortTimeoutException Timeout of serial port
+         */
+        private string ReadResponse()
+        {
+            StringBuilder response = new StringBuilder();
+            byte[] buffer = null;
+            while (true)
+            {
+                serialPort.Read(buffer, 0, serialPort.BytesToRead);
+                if (buffer[0] == '\r')
+                {
+                    return response.ToString();
+                }
+                else if (buffer[0] == 7)
+                {
+                    throw new USBtinException(serialPort.PortName + " - BELL signal");
+                }
+                else
+                {
+                    response.Append((char)buffer[0]);
+                }
+            }
+        }
+
+        /**
+         * <summary>
+         * Transmit given command to USBtin
+         * </summary>
+         *
+         * <param name="cmd">Command</param>
+         * <returns>Response from USBtin</returns>
+         * @throws SerialPortException Error while talking to USBtin
+         * @throws SerialPortTimeoutException Timeout of serial port
+         */
+        private string Transmit(string cmd)
+        {
+            string cmdline = cmd + "\r";
+            serialPort.Write(encoding.GetBytes(cmdline), 0, 1);
+
+            return ReadResponse();
+        }
+
+        /**
+         * <summary>
          * Add message listener
+         * </summary>
          * 
-         * @param listener Listener object
+         * <param name="listener">Listener object</param>
          */
-        public void AddMessageListener(CANMessageListener listener)
+        public void AddMessageListener(ICANMessageListener listener)
         {
-            listeners.add(listener);
+            listeners.Add(listener);
         }
 
         /**
+         * <summary>
          * Remove message listener.
+         * </summary>
          * 
-         * @param listener Listener object
+         * <param name="listener">Listener object</param>
          */
-        public void RemoveMessageListener(CANMessageListener listener)
+        public void RemoveMessageListener(ICANMessageListener listener)
         {
-            listeners.remove(listener);
+            listeners.Remove(listener);
         }
 
         /**
+         * <summary>
          * Send first message in tx fifo
+         * </summary>
          * 
          * @throws USBtinException On serial port errors
          */
         protected void SendFirstTXFifoMessage()
         {
-            if (fifoTX.size() == 0) {
+            if (fifoTX.Count == 0)
+            {
                 return;
             }
 
-            CANMessage canmsg = fifoTX.getFirst();
+            CANMessage canmsg = fifoTX.First.Value;
 
-            try {
-                serialPort.writeBytes((canmsg.toString() + "\r").getBytes());
-            } catch (Exception e) {
-                throw new USBtinException(e);
+            try
+            {
+                serialPort.Write(encoding.GetBytes(canmsg.ToString() + "\r"), 0, 1);
+            }
+            catch (Exception e)
+            {
+                throw new USBtinException(e.Message);
             }
         }
 
@@ -416,9 +482,9 @@ namespace USBtinCSharp
          */
         public void Send(CANMessage canmsg)
         {
-            fifoTX.add(canmsg);
+            fifoTX.AddLast(canmsg);
 
-            if (fifoTX.size() > 1) return;
+            if (fifoTX.Count > 1) return;
 
             SendFirstTXFifoMessage();
         }
@@ -432,11 +498,14 @@ namespace USBtinCSharp
         */
         public void WriteMCPRegister(int register, byte value)
         {
-            try {
-                string cmd = "W" + string.format("%02x", register) + string.format("%02x", value);
+            try
+            {
+                string cmd = "W" + string.Format("%02x", register) + string.Format("%02x", value);
                 Transmit(cmd);
-            } catch (Exception e) {
-                throw new USBtinException(e);
+            }
+            catch (Exception e)
+            {
+                throw new USBtinException(e.Message);
             }
         }
 
@@ -447,8 +516,10 @@ namespace USBtinCSharp
          * @param registers Register values to write
          * @throws USBtinException On serial port errors
          */
-        protected void WriteMCPFilterMaskRegisters(int maskid, byte[] registers) {
-            for (int i = 0; i < 4; i++) {
+        protected void WriteMCPFilterMaskRegisters(int maskid, byte[] registers)
+        {
+            for (int i = 0; i < 4; i++)
+            {
                 WriteMCPRegister(0x20 + maskid * 4 + i, registers[i]);
             }
         }
@@ -460,11 +531,13 @@ namespace USBtinCSharp
          * @param registers Register values to write
          * @throws USBtinException On serial port errors
          */
-        protected void WriteMCPFilterRegisters(int filterid, byte[] registers) {
-            int startregister [] = { 0x00, 0x04, 0x08, 0x10, 0x14, 0x18};
-        
-            for (int i = 0; i < 4; i++) {
-                writeMCPRegister(startregister[filterid] + i, registers[i]);
+        protected void WriteMCPFilterRegisters(int filterid, byte[] registers)
+        {
+            int[] startregister = { 0x00, 0x04, 0x08, 0x10, 0x14, 0x18 };
+
+            for (int i = 0; i < 4; i++)
+            {
+                WriteMCPRegister(startregister[filterid] + i, registers[i]);
             }
         }
 
@@ -475,7 +548,8 @@ namespace USBtinCSharp
          * @param fc Filter chains (USBtin supports maximum 2 hardware filter chains)
          * @throws USBtinException On serial port errors
          */
-        public void SetFilter(FilterChain[] fc) {
+        public void SetFilter(FilterChain[] fc)
+        {
             /*
                 * The MCP2515 offers two filter chains. Each chain consists of one mask
                 * and a set of filters:
@@ -487,60 +561,73 @@ namespace USBtinCSharp
                 *              RXF4
                 *              RXF5
                 */
-        
+
             // if no filter chain given, accept all messages
-            if ((fc == null) || (fc.Length == 0)) {
+            if ((fc == null) || (fc.Length == 0))
+            {
                 byte[] registers = { 0, 0, 0, 0 };
                 WriteMCPFilterMaskRegisters(0, registers);
                 WriteMCPFilterMaskRegisters(1, registers);
 
                 return;
             }
-        
+
             // check maximum filter channels
-            if (fc.Length > 2) {
+            if (fc.Length > 2)
+            {
                 throw new USBtinException("Too many filter chains: " + fc.Length + " (maximum is 2)!");
             }
-        
+
             // swap channels if necessary and check filter chain length
-            if (fc.Length == 2) {
-                if (fc[0].getFilters().length > fc[1].getFilters().length) {
+            if (fc.Length == 2)
+            {
+                if (fc[0].getFilters().length > fc[1].getFilters().length)
+                {
                     FilterChain temp = fc[0];
                     fc[0] = fc[1];
                     fc[1] = temp;
                 }
 
-                if ((fc[0].getFilters().length > 2) || (fc[1].getFilters().length > 4)) {
+                if ((fc[0].getFilters().length > 2) || (fc[1].getFilters().length > 4))
+                {
                     throw new USBtinException("Filter chain too long: " + fc[0].getFilters().length + "/" + fc[1].getFilters().length + " (maximum is 2/4)!");
                 }
-            } else if (fc.Length == 1) {
-                if ((fc[0].getFilters().length > 4)) {
+            }
+            else if (fc.Length == 1)
+            {
+                if ((fc[0].getFilters().length > 4))
+                {
                     throw new USBtinException("Filter chain too long: " + fc[0].getFilters().length + " (maximum is 4)!");
                 }
             }
-        
+
             // set MCP2515 filter/mask registers; walk through filter channels
             int filterid = 0;
             int fcidx = 0;
-            for (int channel = 0; channel < 2; channel++) {
+            for (int channel = 0; channel < 2; channel++)
+            {
 
-            // set mask
-            WriteMCPFilterMaskRegisters(channel, fc[fcidx].getMask().getRegisters());
+                // set mask
+                WriteMCPFilterMaskRegisters(channel, fc[fcidx].getMask().getRegisters());
 
-            // set filters
-            byte[] registers = { 0, 0, 0, 0 };
-            for (int i = 0; i < (channel == 0 ? 2 : 4); i++) {
-                if (fc[fcidx].getFilters().length > i) {
-                    registers = fc[fcidx].getFilters()[i].getRegisters();
+                // set filters
+                byte[] registers = { 0, 0, 0, 0 };
+                for (int i = 0; i < (channel == 0 ? 2 : 4); i++)
+                {
+                    if (fc[fcidx].getFilters().length > i)
+                    {
+                        registers = fc[fcidx].getFilters()[i].getRegisters();
+                    }
+
+                    WriteMCPFilterRegisters(filterid, registers);
+                    filterid++;
                 }
 
-                WriteMCPFilterRegisters(filterid, registers);
-                filterid++;
-            }
-
-            // go to next filter chain if available
-            if (fc.Length - 1 > fcidx) {
-                fcidx++;
+                // go to next filter chain if available
+                if (fc.Length - 1 > fcidx)
+                {
+                    fcidx++;
+                }
             }
         }
     }

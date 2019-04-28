@@ -50,7 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CANMessage.cs" />
-    <Compile Include="CANMessageListener.cs" />
+    <Compile Include="ICANMessageListener.cs" />
     <Compile Include="USBtinCSharp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="USBtinException.cs" />
