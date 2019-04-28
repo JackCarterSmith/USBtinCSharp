@@ -49,7 +49,7 @@ namespace USBtinCSharp
          * @param message Message string
          * @param cause Cause of exception
          */
-        public USBtinException(string message, Exception cause) : base(message, cause) {
+        public USBtinException(string message, Exception ex) : base(message, ex) {
         }
 
         /**
@@ -57,7 +57,7 @@ namespace USBtinCSharp
          * 
          * @param cause Cause of exception
          */
-        public USBtinException(Exception cause) : base(cause.Message, cause) {
+        public USBtinException(Exception ex, string format, params object[] args) : base(string.Format(format, args), ex) {
         }
     }
 }

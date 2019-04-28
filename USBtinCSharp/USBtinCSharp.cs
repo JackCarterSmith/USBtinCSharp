@@ -40,7 +40,7 @@ namespace USBtinCSharp
         protected StringBuilder incomingMessage = new StringBuilder();
 
         /** Listener for CAN messages */
-        protected List<CANMessageListener> listeners = new List<CANMessageListener>();
+        protected List<ICANMessageListener> listeners = new List<ICANMessageListener>();
 
         /** Transmit fifo */
         protected LinkedList<CANMessage> fifoTX = new LinkedList<CANMessage>();
@@ -70,54 +70,60 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Get firmware version string.
          * During connect() the firmware version is requested from USBtin.
+         * </summary>
          * 
-         * @return Firmware version
+         * <returns>Firmware version</returns>
          */
-        public string GetFirmwareVersion()
-        {
+        public string GetFirmwareVersion() {
             return firmwareVersion;
         }
 
         /**
+         * <summary>
          * Get hardware version string.
          * During connect() the hardware version is requested from USBtin.
+         * </summary>
          * 
-         * @return Hardware version
+         * <returns>Hardware version</returns>
          */
-        public string GetHardwareVersion()
-        {
+        public string GetHardwareVersion() {
             return hardwareVersion;
         }
 
         /**
+         * <summary>
          * Get serial number string.
          * During connect() the serial number is requested from USBtin.
+         * </summary>
          *
          * @return Serial number
          */
-        public string GetSerialNumber()
-        {
+        public string GetSerialNumber() {
             return serialNumber;
         }
 
         /**
+         * <summary>
          * Connect to USBtin on given port.
          * Opens the serial port, clears pending characters and send close command
          * to make sure that we are in configuration mode.
+         * </summary>
          * 
-         * @param portName Name of virtual serial port
+         * <param name="portName">Name of virtual serial port</param>
          * @throws USBtinException Error while connecting to USBtin
          */
-        public void Connect(string portName)
-        {
+        public void Connect(string portName) {
             byte[] buffer = null;
 
-            try
-            {
+            try {
                 // create serial port object
-                serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.None);
+                serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.None) {
+                    ReadTimeout = TIMEOUT,
+                    WriteTimeout = TIMEOUT
+                };
 
                 // open serial port and initialize it
                 serialPort.Open();
@@ -161,7 +167,7 @@ namespace USBtinCSharp
             try {
                 serialPort.Close();
             } catch (Exception e) {
-                throw new USBtinException(e);
+                throw new USBtinException(e.Message);
             }
         }
 
@@ -196,7 +202,7 @@ namespace USBtinCSharp
                 } else {
                     // calculate baudrate register settings
 
-                    final int FOSC = 24000000;
+                    const int FOSC = 24000000;
                     int xdesired = FOSC / baudrate;
                     int xopt = 0;
                     int diffopt = 0;
@@ -225,30 +231,30 @@ namespace USBtinCSharp
                     }
 
                     // mapping for CNF register values
-                    int cnfvalues[] = { 0x9203, 0x9303, 0x9B03, 0x9B04, 0x9C04, 0xA404, 0xA405, 0xAC05, 0xAC06, 0xAD06, 0xB506, 0xB507, 0xBD07 };
+                    int[] cnfvalues = { 0x9203, 0x9303, 0x9B03, 0x9B04, 0x9C04, 0xA404, 0xA405, 0xAC05, 0xAC06, 0xAD06, 0xB506, 0xB507, 0xBD07 };
 
-                    this.Transmit("s" + String.format("%02x", brpopt | 0xC0) + String.format("%04x", cnfvalues[xopt - 11]));
+                    Transmit("s" + string.Format("%02x", brpopt | 0xC0) + string.Format("%04x", cnfvalues[xopt - 11]));
 
-                    System.out.println("No preset for given baudrate " + baudrate + ". Set baudrate to " + (FOSC / ((brpopt + 1) * 2) / xopt));
+                    //System.out.println("No preset for given baudrate " + baudrate + ". Set baudrate to " + (FOSC / ((brpopt + 1) * 2) / xopt));
+                    throw new USBtinException("No preset for given baudrate " + baudrate + ". Set baudrate to " + (FOSC / ((brpopt + 1) * 2) / xopt));
                 }
 
                 // open can channel
                 char modeCh;
                 switch (mode) {
-                    default:
-                        System.err.println("Mode " + mode + " not supported. Opening listen only.");
-                    case LISTENONLY: modeCh = 'L'; break;
-                    case LOOPBACK: modeCh = 'l'; break;
-                    case ACTIVE: modeCh = 'O'; break;
+                    case OpenMode.LISTENONLY: modeCh = 'L'; break;
+                    case OpenMode.LOOPBACK: modeCh = 'l'; break;
+                    case OpenMode.ACTIVE: modeCh = 'O'; break;
+                    default: throw new USBtinException("Mode " + mode + " not supported. Opening listen only.");
                 }
-                this.Transmit(modeCh + "");
+                Transmit(modeCh + "");
 
                 // register serial port event listener
                 serialPort.setEventsMask(SerialPort.MASK_RXCHAR);
                 serialPort.addEventListener(this);
 
             } catch (Exception e) {
-                throw new USBtinException(e);
+                throw new USBtinException(e.Message);
             }
         }
 

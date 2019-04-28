@@ -27,7 +27,7 @@ namespace USBtinCSharp
     /**
      * Listener for CAN messages.
      */
-    public interface CANMessageListener
+    public interface ICANMessageListener
     {
         /**
          * This method is called on incoming CAN messages

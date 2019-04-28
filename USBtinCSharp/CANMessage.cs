@@ -42,9 +42,11 @@ namespace USBtinCSharp
         protected bool rtr;
 
         /**
+         * <summary>
          * Get CAN message identifier
+         * </summary>
          * 
-         * @return CAN message identifier
+         * <returns>CAN message identifier</returns>
          */
         public int GetId()
         {
@@ -52,9 +54,11 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Set CAN message identifier
+         * </summary>
          * 
-         * @param id CAN message identifier
+         * <param name="id">CAN message identifier</param>
          */
         public void SetId(int id)
         {
@@ -69,19 +73,23 @@ namespace USBtinCSharp
         }
 
         /**
-     * Get CAN message payload data
-     * 
-     * @return CAN message payload data
-     */
+         * <summary>
+         * Get CAN message payload data
+         * </summary>
+         * 
+         * <returns>CAN message payload data</returns>
+         */
         public byte[] GetData()
         {
             return data;
         }
 
         /**
+         * <summary>
          * Set CAN message payload data
+         * </summary>
          * 
-         * @param data 
+         * <param name="data"></param> 
          */
         public void SetData(byte[] data)
         {
@@ -89,9 +97,11 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Determine if CAN message id is extended
+         * </summary>
          * 
-         * @return true if extended CAN message
+         * <returns>true if extended CAN message</returns>
          */
         public bool IsExtended()
         {
@@ -99,9 +109,11 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Determine if CAN message is a request for transmission
+         * </summary>
          * 
-         * @return true if RTR message
+         * <returns>true if RTR message</returns>
          */
         public bool IsRtr()
         {
@@ -109,11 +121,13 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Create message with given id and data.
          * Depending on Id, the extended flag is set.
+         * </summary>
          * 
-         * @param id Message identifier
-         * @param data Payload data
+         * <param name="id">Message identifier</param>
+         * <param name="data">Payload data</param>
          */
         public CANMessage(int id, byte[] data)
         {
@@ -124,12 +138,14 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Create message with given message properties.
+         * </summary>
          * 
-         * @param id Message identifier
-         * @param data Payload data
-         * @param extended Marks messages with extended identifier
-         * @param rtr Marks RTR messages
+         * <param name="id">Message identifier</param>
+         * <param name="data">Payload data</param>
+         * <param name="extended">Marks messages with extended identifier</param>
+         * <param name="rtr">Marks RTR messages</param>
          */
         public CANMessage(int id, byte[] data, bool extended, bool rtr)
         {
@@ -140,6 +156,7 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Create message with given message string.
          * The message string is parsed. On errors, the corresponding value is
          * set to zero. 
@@ -149,8 +166,9 @@ namespace USBtinCSharp
          * t00121122    id: 001h        dlc: 2      data: 11 22
          * T12345678197 id: 12345678h   dlc: 1      data: 97
          * r0037        id: 003h        dlc: 7      RTR
+         * </summary>
          * 
-         * @param msg Message string
+         * <param name="msg">Message string</param>
          */
         public CANMessage(string msg)
         {
@@ -164,6 +182,7 @@ namespace USBtinCSharp
             switch (type) {
                 case 'r':
                     this.rtr = true;
+                    goto default;
                 default:
                 case 't':
                     try {
@@ -177,6 +196,7 @@ namespace USBtinCSharp
                     break;
                 case 'R':
                     this.rtr = true;
+                    goto case 't';
                 case 'T':
                     try {
                         this.id = int.Parse(msg.Substring(index, index + 8), System.Globalization.NumberStyles.AllowParentheses);
@@ -214,9 +234,11 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Get string representation of CAN message
+         * </summary>
          * 
-         * @return CAN message as string representation
+         * <returns>CAN message as string representation</returns>
          */
         public override string ToString()
         {
