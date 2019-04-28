@@ -39,12 +39,6 @@ namespace USBtinCSharp
         /** Characters coming from USBtin are collected in this stringBuilder */
         protected StringBuilder incomingMessage = new StringBuilder();
 
-        /** Listener for CAN messages */
-        protected List<ICANMessageListener> listeners = new List<ICANMessageListener>();
-
-        /** Transmit fifo */
-        protected LinkedList<CANMessage> fifoTX = new LinkedList<CANMessage>();
-
         /** USBtin firmware version */
         protected string firmwareVersion;
 
@@ -250,8 +244,7 @@ namespace USBtinCSharp
                 Transmit(modeCh + "");
 
                 // register serial port event listener
-                serialPort.setEventsMask(SerialPort.MASK_RXCHAR);
-                serialPort.addEventListener(this);
+                serialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
 
             } catch (Exception e) {
                 throw new USBtinException(e.Message);
@@ -266,14 +259,21 @@ namespace USBtinCSharp
         public void CloseCANChannel()
         {
             try {
-                serialPort.removeEventListener();
-                serialPort.writeBytes("C\r".getBytes());
+                //Remove event listener from serial port
+                serialPort.DataReceived -= new SerialDataReceivedEventHandler(DataReceivedHandler);
+                serialPort.Write(encoding.GetBytes("C\r"), 0, 1);
             } catch (Exception e) {
-                throw new USBtinException(e.GetType().ToString());
+                throw new USBtinException(e.Message);
             }
 
             firmwareVersion = null;
             hardwareVersion = null;
+        }
+
+        private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
+        {
+            lock (SyncPort)
+                Q_Receive.Write(serialPort.ReadExisting());
         }
 
         /**
@@ -312,7 +312,6 @@ namespace USBtinCSharp
 
             return this.ReadResponse();
         }
-
 
         /**
          * Handle serial port event.
