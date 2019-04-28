@@ -29,6 +29,7 @@ namespace USBtinCSharp
      */
     public class CANMessage
     {
+        #region private members
         /** CAN message ID */
         protected int id;
 
@@ -40,85 +41,52 @@ namespace USBtinCSharp
 
         /** Marks request for transmition frames */
         protected bool rtr;
+        #endregion private members
 
-        /**
-         * <summary>
-         * Get CAN message identifier
-         * </summary>
-         * 
-         * <returns>CAN message identifier</returns>
-         */
-        public int GetId()
+        #region public properties
+
+        /// <summary>
+        /// CAN message identifier
+        /// </summary>
+        public int Id
         {
-            return id;
+            get { return id; }
         }
 
-        /**
-         * <summary>
-         * Set CAN message identifier
-         * </summary>
-         * 
-         * <param name="id">CAN message identifier</param>
-         */
-        public void SetId(int id)
+        /// <summary>
+        /// CAN message id is extended
+        /// </summary>
+        public bool isExtended
         {
-
-            if (id > (0x1fffffff))
-                id = 0x1fffffff;
-
-            if (id > 0x7ff)
-                extended = true;
-
-            this.id = id;
+            get { return extended; }
         }
 
-        /**
-         * <summary>
-         * Get CAN message payload data
-         * </summary>
-         * 
-         * <returns>CAN message payload data</returns>
-         */
-        public byte[] GetData()
+        /// <summary>
+        /// CAN message payload data
+        /// </summary>
+        public byte[] Data
         {
-            return data;
+            get { return data; }
         }
 
-        /**
-         * <summary>
-         * Set CAN message payload data
-         * </summary>
-         * 
-         * <param name="data"></param> 
-         */
-        public void SetData(byte[] data)
+        /// <summary>
+        /// Number of bytes of data (0–8 bytes)
+        /// </summary>
+        public int DLC
         {
-            this.data = data;
+            get { return data.Length; }
         }
 
-        /**
-         * <summary>
-         * Determine if CAN message id is extended
-         * </summary>
-         * 
-         * <returns>true if extended CAN message</returns>
-         */
-        public bool IsExtended()
+        /// <summary>
+        /// Remote transmission request
+        /// Must be dominant (0) for data frames and recessive (1) for remote request frames 
+        /// </summary>
+        public bool IsRTR
         {
-            return extended;
+            get { return rtr; }
         }
 
-        /**
-         * <summary>
-         * Determine if CAN message is a request for transmission
-         * </summary>
-         * 
-         * <returns>true if RTR message</returns>
-         */
-        public bool IsRtr()
-        {
-            return rtr;
-        }
+        #endregion public properties
 
         /**
          * <summary>
@@ -133,7 +101,7 @@ namespace USBtinCSharp
         {
             this.data = data;
             this.extended = false;
-            SetId(id);
+            this.id = id;
             this.rtr = false;
         }
 
@@ -149,7 +117,7 @@ namespace USBtinCSharp
          */
         public CANMessage(int id, byte[] data, bool extended, bool rtr)
         {
-            SetId(id);
+            this.id = id;
             this.data = data;
             this.extended = extended;
             this.rtr = rtr;

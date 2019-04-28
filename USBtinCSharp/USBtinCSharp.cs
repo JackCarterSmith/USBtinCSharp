@@ -104,11 +104,23 @@ namespace USBtinCSharp
          * During connect() the serial number is requested from USBtin.
          * </summary>
          *
-         * @return Serial number
+         * <returns>Serial number</returns>
          */
         public string GetSerialNumber()
         {
             return serialNumber;
+        }
+
+        /**
+         * <summary>
+         * Get list of serial devices connected.
+         * </summary>
+         *
+         * <returns>List of serial devices</returns>
+         */
+        public List<string> GetDevives()
+        {
+            return SerialPort.GetPortNames().ToList();
         }
 
         /**
@@ -475,9 +487,11 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Send given can message.
+         * </summary>
          * 
-         * @param canmsg Can message to send
+         * <param name="canmsg">Can message to send</param>
          * @throws USBtinException  On serial port errors
          */
         public void Send(CANMessage canmsg)
@@ -490,10 +504,12 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
         * Write given register of MCP2515
+        * </summary>
         * 
-        * @param register Register address
-        * @param value Value to write
+        * <param name="register">Register address</param>
+        * <param name="value">Value to write</param>
         * @throws USBtinException On serial port errors
         */
         public void WriteMCPRegister(int register, byte value)
@@ -510,10 +526,12 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Write given mask registers to MCP2515
+         * </summary>
          * 
-         * @param maskid Mask identifier (0 = RXM0, 1 = RXM1)
-         * @param registers Register values to write
+         * <param name="maskid">Mask identifier (0 = RXM0, 1 = RXM1)</param>
+         * <param name="registers">Register values to write</param>
          * @throws USBtinException On serial port errors
          */
         protected void WriteMCPFilterMaskRegisters(int maskid, byte[] registers)
@@ -525,10 +543,12 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Write given filter registers to MCP2515
+         * </summary>
          * 
-         * @param filterid Filter identifier (0 = RXF0, ... 5 = RXF5)
-         * @param registers Register values to write
+         * <param name="filterid">Filter identifier (0 = RXF0, ... 5 = RXF5)</param>
+         * <param name="registers">Register values to write</param>
          * @throws USBtinException On serial port errors
          */
         protected void WriteMCPFilterRegisters(int filterid, byte[] registers)
@@ -542,10 +562,12 @@ namespace USBtinCSharp
         }
 
         /**
+         * <summary>
          * Set hardware filters.
          * Call this function after connect() and before openCANChannel()!
+         * </summary>
          * 
-         * @param fc Filter chains (USBtin supports maximum 2 hardware filter chains)
+         * <param name="fc">Filter chains (USBtin supports maximum 2 hardware filter chains)</param>
          * @throws USBtinException On serial port errors
          */
         public void SetFilter(FilterChain[] fc)
